@@ -6,7 +6,7 @@ pipeline {
     environment {
         JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
         REGISTRY = 'docker-host:5000'
-        IMAGE_NAME = 'richard-petstore'
+        IMAGE_NAME = 'richard-petstore/richard-petstore'
     }
 
     stages {
