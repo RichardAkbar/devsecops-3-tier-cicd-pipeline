@@ -67,46 +67,6 @@ Di dalam Kubernetes, aplikasi Spring Boot dan database MySQL dijalankan sebagai 
 
 ## 4.2 Diagram Arsitektur
 
-```mermaid
-flowchart TD
-    DEV["Developer"]
-    GH["GitHub Repository<br/>Source Code + Jenkinsfile"]
-    J["Jenkins Controller<br/>Jump Host"]
-    A["Jenkins Agent<br/>Docker Host"]
-
-    MAVEN["Maven<br/>Build & Test"]
-    SONAR["SonarQube Cloud<br/>Code Analysis & Quality Gate"]
-    DOCKER["Docker<br/>Build Image"]
-    TRIVY["Trivy<br/>Vulnerability Scan"]
-    REG["Private Docker Registry<br/>docker-host:5000"]
-
-    K8S["Kubernetes API Server"]
-    DEP["Richard PetStore<br/>Deployment"]
-    SVC["Richard PetStore<br/>ClusterIP Service"]
-    APP["Spring Boot Application<br/>Port 8081"]
-    MYSQL["MySQL Deployment"]
-    MSVC["MySQL ClusterIP Service"]
-    PVC["PersistentVolumeClaim"]
-    PV["PersistentVolume<br/>5Gi"]
-
-    DEV --> GH
-    GH --> J
-    J --> A
-    A --> MAVEN
-    MAVEN --> SONAR
-    SONAR --> DOCKER
-    DOCKER --> TRIVY
-    TRIVY --> REG
-    REG --> K8S
-    J --> K8S
-    K8S --> DEP
-    DEP --> SVC
-    SVC --> APP
-    APP --> MSVC
-    MSVC --> MYSQL
-    MYSQL --> PVC
-    PVC --> PV
-```
 
 **Gambar 1. Arsitektur CI/CD dan Deployment Kubernetes Richard PetStore**
 
