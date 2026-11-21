@@ -21,18 +21,12 @@ pipeline {
             steps {
                 withEnv(["PATH+JDK21=${env.JAVA_HOME}/bin"]) {
                     sh '''
-                        echo "===== JAVA ====="
                         java -version
                         javac -version
-
-                        echo "===== MAVEN ====="
                         mvn -version
-
-                        echo "===== DOCKER ====="
                         docker --version
-
-                        echo "===== TRIVY ====="
                         trivy --version
+                        kubectl version --client
                     '''
                 }
             }
@@ -116,11 +110,64 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'kubernetes-deployer-token',
+                        variable: 'KUBE_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+                        umask 077
+
+                        KUBECONFIG_FILE="$(mktemp)"
+                        trap 'rm -f "$KUBECONFIG_FILE"' EXIT
+
+                        kubectl --kubeconfig="$KUBECONFIG_FILE" config set-cluster petstore-cluster \
+                          --server=https://jump-host:6443 \
+                          --certificate-authority=/home/admin/.kube/kubernetes-ca.crt \
+                          --embed-certs=true
+
+                        kubectl --kubeconfig="$KUBECONFIG_FILE" config set-credentials jenkins-deployer \
+                          --token="$KUBE_TOKEN"
+
+                        kubectl --kubeconfig="$KUBECONFIG_FILE" config set-context petstore-context \
+                          --cluster=petstore-cluster \
+                          --user=jenkins-deployer \
+                          --namespace=petstore
+
+                        kubectl --kubeconfig="$KUBECONFIG_FILE" config use-context petstore-context
+
+                        export KUBECONFIG="$KUBECONFIG_FILE"
+
+                        echo "===== CHECK KUBERNETES ACCESS ====="
+                        kubectl auth can-i patch deployments -n petstore
+
+                        echo "===== DEPLOY NEW IMAGE ====="
+                        kubectl set image deployment/richard-petstore \
+                          richard-petstore=${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} \
+                          -n petstore
+
+                        echo "===== VERIFY ROLLOUT ====="
+                        kubectl rollout status deployment/richard-petstore \
+                          -n petstore \
+                          --timeout=180s
+
+                        echo "===== DEPLOYMENT STATUS ====="
+                        kubectl get deployment richard-petstore -n petstore
+                        kubectl get pods -n petstore -l app=richard-petstore
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Richard PetStore CI/CD pipeline completed successfully!'
+            echo 'Richard PetStore CI/CD pipeline and Kubernetes deployment completed successfully!'
         }
 
         failure {
