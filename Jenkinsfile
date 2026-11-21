@@ -5,8 +5,6 @@ pipeline {
 
     environment {
         JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
-        PATH+JDK21 = '/usr/lib/jvm/java-21-openjdk-amd64/bin'
-
         REGISTRY = 'docker-host:5000'
         IMAGE_NAME = 'richard-petstore'
     }
@@ -21,43 +19,49 @@ pipeline {
 
         stage('Verify Environment') {
             steps {
-                sh '''
-                    echo "===== JAVA ====="
-                    java -version
-                    javac -version
+                withEnv(["PATH+JDK21=${env.JAVA_HOME}/bin"]) {
+                    sh '''
+                        echo "===== JAVA ====="
+                        java -version
+                        javac -version
 
-                    echo "===== MAVEN ====="
-                    mvn -version
+                        echo "===== MAVEN ====="
+                        mvn -version
 
-                    echo "===== DOCKER ====="
-                    docker --version
+                        echo "===== DOCKER ====="
+                        docker --version
 
-                    echo "===== TRIVY ====="
-                    trivy --version
-                '''
+                        echo "===== TRIVY ====="
+                        trivy --version
+                    '''
+                }
             }
         }
 
         stage('Build and Test') {
             steps {
-                dir('richard-petstore') {
-                    sh 'mvn clean verify'
+                withEnv(["PATH+JDK21=${env.JAVA_HOME}/bin"]) {
+                    dir('richard-petstore') {
+                        sh 'mvn clean verify'
+                    }
                 }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                dir('richard-petstore') {
-                    withSonarQubeEnv('SonarQubeCloud') {
-                        sh '''
-                            mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar \
-                              -Dsonar.organization=richardakbar \
-                              -Dsonar.projectKey=RichardAkbar_devsecops-3-tier-cicd-pipeline \
-                              -Dsonar.host.url=https://sonarcloud.io \
-                              -Dsonar.qualitygate.wait=true \
-                              -Dsonar.qualitygate.timeout=300
-                        '''
+                withEnv(["PATH+JDK21=${env.JAVA_HOME}/bin"]) {
+                    dir('richard-petstore') {
+                        withSonarQubeEnv('SonarQubeCloud') {
+                            sh '''
+                                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar \
+                                  -Dsonar.organization=richardakbar \
+                                  -Dsonar.projectKey=RichardAkbar_devsecops-3-tier-cicd-pipeline \
+                                  -Dsonar.host.url=https://sonarcloud.io \
+                                  -Dsonar.qualitygate.wait=true \
+                                  -Dsonar.qualitygate.timeout=300
+                            '''
+                        }
                     }
                 }
             }
@@ -78,13 +82,9 @@ pipeline {
         stage('Trivy Security Scan') {
             steps {
                 sh '''
-                    echo "===== TRIVY VULNERABILITY SCAN ====="
-
                     trivy image \
                       --scanners vuln \
                       ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
-
-                    echo "===== SECURITY GATE: HIGH AND CRITICAL ====="
 
                     trivy image \
                       --scanners vuln \
