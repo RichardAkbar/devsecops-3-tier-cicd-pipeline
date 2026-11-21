@@ -110,7 +110,7 @@ flowchart TD
 
 **Gambar 1. Arsitektur CI/CD dan Deployment Kubernetes Richard PetStore**
 
-**[MASUKKAN GAMBAR DIAGRAM ARSITEKTUR DI SINI]**
+![alt text](arsitteektur.png)
 
 Nama file yang disarankan: `architecture-richard-petstore.png`
 
