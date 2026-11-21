@@ -4,6 +4,9 @@ pipeline {
     }
 
     environment {
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        PATH+JDK21 = '/usr/lib/jvm/java-21-openjdk-amd64/bin'
+
         REGISTRY = 'docker-host:5000'
         IMAGE_NAME = 'richard-petstore'
     }
@@ -19,9 +22,17 @@ pipeline {
         stage('Verify Environment') {
             steps {
                 sh '''
+                    echo "===== JAVA ====="
                     java -version
+                    javac -version
+
+                    echo "===== MAVEN ====="
                     mvn -version
+
+                    echo "===== DOCKER ====="
                     docker --version
+
+                    echo "===== TRIVY ====="
                     trivy --version
                 '''
             }
@@ -67,17 +78,13 @@ pipeline {
         stage('Trivy Security Scan') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo "TRIVY VULNERABILITY SCAN"
-                    echo "======================================"
+                    echo "===== TRIVY VULNERABILITY SCAN ====="
 
                     trivy image \
                       --scanners vuln \
                       ${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
 
-                    echo "======================================"
-                    echo "SECURITY GATE: HIGH AND CRITICAL"
-                    echo "======================================"
+                    echo "===== SECURITY GATE: HIGH AND CRITICAL ====="
 
                     trivy image \
                       --scanners vuln \
