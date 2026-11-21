@@ -72,8 +72,6 @@ Di dalam Kubernetes, aplikasi Spring Boot dan database MySQL dijalankan sebagai 
 
 ![alt text](arsitteektur.png)
 
-Nama file yang disarankan: `architecture-richard-petstore.png`
-
 ## 4.3 Komponen Arsitektur
 
 | Komponen | Fungsi |
